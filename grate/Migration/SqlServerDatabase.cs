@@ -1,7 +1,10 @@
 ﻿using System;
+using System.Data;
 using System.Data.Common;
+using System.Linq;
 using System.Threading.Tasks;
 using System.Transactions;
+using Dapper;
 using grate.Configuration;
 using grate.Infrastructure;
 using Microsoft.Data.SqlClient;
@@ -67,5 +70,29 @@ public class SqlServerDatabase : AnsiSqlDatabase
         await WaitUntilDatabaseIsReady();
 
         Logger.LogInformation("Database {DbName} successfully restored from path {Path}.", DatabaseName, backupPath);
+    }
+    
+    public override async Task<bool> DatabaseExists()
+    {
+        // For Bug #167.  Sql Server is causing issues when the database name passed in differs only in case from one already existing on the server.
+        // There's currently no point adding to ISyntax for this as all the other DBMS's would just be a NOP.
+
+        // This should also mean that a SQL server running a Case Sensitive collation _also_ works as expected
+        var sql = $"SELECT NAME FROM SYS.DATABASES WHERE [NAME] = '{DatabaseName}'";
+        try
+        {
+            await OpenConnection();
+            var results = await Connection.QueryAsync<string>(sql, commandType: CommandType.Text);
+            return results.Any();
+        }
+        catch (DbException ex)
+        {
+            Logger.LogDebug(ex, "An unexpected error occurred performing the CheckDatabaseExists check: {ErrorMessage}", ex.Message);
+            return false; // base method also returns false on any DbException
+        }
+        finally
+        {
+            await CloseConnection();
+        }
     }
 }
