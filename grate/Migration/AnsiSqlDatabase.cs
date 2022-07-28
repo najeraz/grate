@@ -512,7 +512,7 @@ VALUES (@version, @scriptName, @sql, @errorSql, @errorMessage, @now, @now, @usr)
         return await conn.ExecuteAsync(sql, parameters);
     }
 
-    protected async Task ExecuteNonQuery(DbConnection conn, string sql, int? timeout)
+    protected virtual async Task ExecuteNonQuery(DbConnection conn, string sql, int? timeout)
     {
         Logger.LogTrace("SQL: {Sql}", sql);
 
