@@ -39,6 +39,7 @@ public sealed class MigrateCommand : RootCommand
         Add(RunAllAnyTimeScripts());
         Add(DryRun());
         Add(Restore());
+        Add(CreateDatabaseCustomScript());
 
         Handler = CommandHandler.Create(
             async () =>
@@ -205,6 +206,12 @@ public sealed class MigrateCommand : RootCommand
         new(
             new[] { "--restore" },
             " Restore - This instructs grate where to get the backed up database file. Defaults to NULL."
+        );
+
+    private static Option<string> CreateDatabaseCustomScript() =>
+        new(
+            new[] { "--createDatabaseCustomScript" },
+            " Restore - This instructs grate how to override the database creation script."
         );
 
     private static Option<bool> Silent() =>

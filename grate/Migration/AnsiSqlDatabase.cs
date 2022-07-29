@@ -85,7 +85,7 @@ public abstract class AnsiSqlDatabase : IDatabase
             Logger.LogTrace("Creating database {DatabaseName}", DatabaseName);
 
             using var s = new TransactionScope(TransactionScopeOption.Suppress, TransactionScopeAsyncFlowOption.Enabled);
-            var sql = _syntax.CreateDatabase(DatabaseName, Password);
+            var sql = Config?.CreateDatabaseCustomScript ?? _syntax.CreateDatabase(DatabaseName, Password);
 
             await ExecuteNonQuery(AdminConnection, sql, Config?.AdminCommandTimeout);
             s.Complete();
@@ -106,7 +106,6 @@ public abstract class AnsiSqlDatabase : IDatabase
             s.Complete();
         }
     }
-
 
     /// <summary>
     /// Gets whether the Database currently exists on the server or not.
