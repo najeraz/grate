@@ -22,9 +22,30 @@ public class MariaDbDatabase : AnsiSqlDatabase
     protected override bool SupportsSchemas => false;
     protected override DbConnection GetSqlConnection(string? connectionString) => new MySqlConnection(connectionString);
 
-    public override Task RestoreDatabase(string backupPath)
+    public override async Task RestoreDatabase(string backupPath)
     {
-        throw new System.NotImplementedException("Restoring a database from file is not currently supported for Maria DB.");
+        try
+        {
+            await OpenConnection();
+            Logger.LogInformation("Restoring {DbName} database on {Server} server from path {Path}.", DatabaseName, ServerName, backupPath);
+            using var s = new TransactionScope(TransactionScopeOption.Suppress, TransactionScopeAsyncFlowOption.Enabled);
+            var sql = await File.ReadAllTextAsync(backupPath);
+            await ExecuteNonQuery(Connection, sql, Config?.CommandTimeout);
+            s.Complete();
+        }
+        catch (Exception ex)
+        {
+            Logger.LogDebug(ex, "Got error: {ErrorMessage}", ex.Message);
+            throw;
+        }
+        finally
+        {
+            await CloseConnection();
+        }
+
+        await WaitUntilDatabaseIsReady();
+
+        Logger.LogInformation("Database {DbName} successfully restored from path {Path}.", DatabaseName, backupPath);
     }
 
     protected override Task ExecuteNonQuery(DbConnection conn, string sql, int? timeout)
